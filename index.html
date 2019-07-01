@@ -1,0 +1,51 @@
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" type="text/css" href="https://tjsblog.tk/zb_users/theme/presence/style/style.css" />
+<!-- 新 Bootstrap4 核心 CSS 文件 -->
+<link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.1.0/css/bootstrap.min.css">
+<!-- 最新的 Bootstrap4 核心 JavaScript 文件 -->
+<script src="https://cdn.staticfile.org/twitter-bootstrap/4.1.0/js/bootstrap.min.js"></script>
+</head>
+<body onload="getQQpic">
+<center>
+<canvas id="icon" width="100" height="100" ></canvas></br>
+<img id="QQpic" src="http://q2.qlogo.cn/headimg_dl?bs=1836091940&dst_uin=1836091940&spec=100"></br>
+<input onkeyup="getQQpic()" type="text" class="form-control" placeholder="请输入QQ" id="qqnum" >
+<p id="nowPaint"></p>
+<br>
+<button class="btn btn-info" id="draw" onclick="draw()">绘制</button>
+<a href="http://tjsblog.tk/" class="btn btn-info" role="button">返回主页</a>
+</center>
+<script>
+function getQQpic(){//头像获取函数
+	document.getElementById("QQpic").src="http://q2.qlogo.cn/headimg_dl?bs="+document.getElementById("qqnum").value+"&dst_uin="+document.getElementById("qqnum").value+"&spec=100"
+	ctx = document.getElementById('icon').getContext("2d");
+}
+function draw(){ //渲染图像函数
+	var img=document.getElementById("QQpic") //取头像对象
+	ctx.drawImage(img,0,0);//将头像绘制于画布上
+	for(y=0;y<101;y++){ //随机合并R,G,B值
+		for(x=0;x<101;x++){
+			document.getElementById("nowPaint").innerHTML="正在绘制"+x+","+y
+			switch(Math.floor(Math.random()*2)){
+			case 0:
+				ctx.fillStyle = 'rgba(255,0,0,0.5)';
+				ctx.fillRect(x,y,1,1)
+			case 1:
+				ctx.fillStyle = 'rgba(0,255,0,0.5)';
+				ctx.fillRect(x,y,1,1)
+			case 2:
+				ctx.fillStyle = 'rgba(0,0,255,0.5)';
+				ctx.fillRect(x,y,1,1)
+			}
+		}
+	}
+	pixeldata=ctx.getImageData(0,0,100,100).data //反色操作
+	pixeldata.crossOrigin = 'anonymous'
+	for(var i=0,len = pixeldata.length ;i<len;i+=4){
+                pixels.data[i] = 255- pixels.data[i];
+                pixels.data[i+1] = 255 - pixels.data[i+1];
+                pixels.data[i+2] = 255 - pixels.data[i+2];
+            }
+}
+</script>
