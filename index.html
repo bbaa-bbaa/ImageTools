@@ -1,51 +1,386 @@
-<head>
-<meta charset="UTF-8">
-<link rel="stylesheet" type="text/css" href="https://tjsblog.tk/zb_users/theme/presence/style/style.css" />
-<!-- 新 Bootstrap4 核心 CSS 文件 -->
-<link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.1.0/css/bootstrap.min.css">
-<!-- 最新的 Bootstrap4 核心 JavaScript 文件 -->
-<script src="https://cdn.staticfile.org/twitter-bootstrap/4.1.0/js/bootstrap.min.js"></script>
-</head>
-<body onload="getQQpic">
-<center>
-<canvas id="icon" width="100" height="100" ></canvas></br>
-<img id="QQpic" src="http://q2.qlogo.cn/headimg_dl?bs=1836091940&dst_uin=1836091940&spec=100"></br>
-<input onkeyup="getQQpic()" type="text" class="form-control" placeholder="请输入QQ" id="qqnum" >
-<p id="nowPaint"></p>
-<br>
-<button class="btn btn-info" id="draw" onclick="draw()">绘制</button>
-<a href="http://tjsblog.tk/" class="btn btn-info" role="button">返回主页</a>
-</center>
-<script>
-function getQQpic(){//头像获取函数
-	document.getElementById("QQpic").src="http://q2.qlogo.cn/headimg_dl?bs="+document.getElementById("qqnum").value+"&dst_uin="+document.getElementById("qqnum").value+"&spec=100"
-	ctx = document.getElementById('icon').getContext("2d");
-}
-function draw(){ //渲染图像函数
-	var img=document.getElementById("QQpic") //取头像对象
-	ctx.drawImage(img,0,0);//将头像绘制于画布上
-	for(y=0;y<101;y++){ //随机合并R,G,B值
-		for(x=0;x<101;x++){
-			document.getElementById("nowPaint").innerHTML="正在绘制"+x+","+y
-			switch(Math.floor(Math.random()*2)){
-			case 0:
-				ctx.fillStyle = 'rgba(255,0,0,0.5)';
-				ctx.fillRect(x,y,1,1)
-			case 1:
-				ctx.fillStyle = 'rgba(0,255,0,0.5)';
-				ctx.fillRect(x,y,1,1)
-			case 2:
-				ctx.fillStyle = 'rgba(0,0,255,0.5)';
-				ctx.fillRect(x,y,1,1)
-			}
-		}
-	}
-	pixeldata=ctx.getImageData(0,0,100,100).data //反色操作
-	pixeldata.crossOrigin = 'anonymous'
-	for(var i=0,len = pixeldata.length ;i<len;i+=4){
-                pixels.data[i] = 255- pixels.data[i];
-                pixels.data[i+1] = 255 - pixels.data[i+1];
-                pixels.data[i+2] = 255 - pixels.data[i+2];
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no"/>
+        <link href="https://cdn.bootcss.com/material-design-icons/3.0.1/iconfont/material-icons.min.css" rel="stylesheet">
+        <link href="https://cdn.bootcss.com/mdui/0.4.2/css/mdui.min.css" rel="stylesheet">
+        <script src="https://cdn.bootcss.com/mdui/0.4.2/js/mdui.min.js"></script>
+        <style>
+            body {
+                background-color:#fafafa;
+                
             }
-}
-</script>
+            #upload-info{
+                width:199px;
+                padding:20.58px 0px;
+            }
+            #upload-info i {
+                font-size:100px;
+            }
+            #upload-info {
+                cursor:pointer;
+                border-style:solid;
+                border-width:1px;
+            }
+            #choicePic {
+                cursor:pointer;
+            }
+            .noselect{
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -khtml-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            }
+            .ulstyle{
+                cursor:default!important;
+            }
+            #gen,#download,#link1,#link2{
+                color:#fff!important;
+            }
+        </style>
+        <title>
+            头像生成工具
+        </title>
+    </head>
+    <body class="mdui-theme-primary-cyan mdui-theme-accent-light-blue">
+        <div class="mdui-container" style="margin-top:60px">
+            <div class="mdui-row">
+                <div class="mdui-col-xs-12"><h1 class="mdui-text-center mdui-m-b-0">像素点头像转换器</h1></div>
+                <div class="mdui-col-xs-12"><h4 class="mdui-text-center mdui-m-t-0">Design by:TJUGERKFER Made by:bbaa</h4></div>
+            </div>
+            <div class="mdui-row">
+                <div class="mdui-col-xs-6">
+                    <span><strong>原图:</strong></span>
+                </div>
+                <div class="mdui-col-xs-6">
+                    <span><strong>生成图片:</strong></span>
+                </div>
+            </div>
+            <div class="mdui-row">
+                <div id="choicePic" class="mdui-col-xs-6 noselect">
+                    <img alt="点击切换" id="Source" style="display:none;"/>
+                    <div id="upload-info" class="mdui-text-center">
+                        <i class="mdui-icon material-icons">&#xe2c6;</i>
+                        <br/>
+                        <h2><span>点击选择本地图片</info></h2>
+                    </div>
+                    <input class="mdui-hidden" type="file" id="file" name="file"/>
+                </div>
+                <div class="mdui-col-xs-6">
+                    <img id="Output" style="display:none;"/>
+                    <canvas id="Drawing" width="200" height="200"/>
+                </div>
+            </div>
+            <ul class="mdui-list ulstyle">
+                <li class="mdui-divider-inset mdui-m-y-0"></li>
+                <li class="mdui-list-item ulstyle">
+                    <div class="mdui-list-item-content mdui-row">
+                        <div class="mdui-col-xs-3 mdui-text-center"  style="margin-top:9px;">
+                            <span><strong>工作速度</strong></span>
+                        </div>
+                        <div class="mdui-col-xs-9">
+                            <label class="mdui-slider">
+                                <input id="speed" type="range" step="0.1" min="800" max="1000" value="800"/>
+                            </label>
+                        </div>
+                    </div>
+                </li>
+                <li class="mdui-divider-inset mdui-m-y-0"></li>
+                <li class="mdui-list-item ulstyle">
+                    <div class="mdui-list-item-content mdui-row">
+                        <div class="mdui-col-xs-3 mdui-text-center" style="margin-top:8px;">
+                            <span><strong>切换模式</strong></span>
+                        </div>
+                        <div class="mdui-col-xs-9">
+                            <select id="mode" class="mdui-select" mdui-select="{position: 'bottom'}" value="default">
+                            </select>
+                        </div>
+                    </div>
+                </li>
+                <li class="mdui-divider-inset mdui-m-y-0"></li>
+                <li class="mdui-list-item ulstyle">
+                    <div class="mdui-list-item-content">
+                        <div class="mdui-panel" mdui-panel style="background-color:inherit;">
+
+                            <div class="mdui-panel-item" style="width:100%;box-shadow:none;-webkit-box-shadow:none;background-color:inherit;">
+                                <div class="mdui-panel-item-header">这个模式的一些设置</div>
+                                <div id="modeset" class="mdui-panel-item-body">
+                                
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+                <li class="mdui-divider-inset mdui-m-y-0"></li>
+                <li class="mdui-list-item ulstyle">
+                    <div class="mdui-list-item-content mdui-row">
+                        <div class="mdui-col-xs-6">
+                            <button onclick="ImageGen.gen();" id="gen" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent mdui-btn-block" disabled>立即生成</button>
+                        </div>
+                        <div class="mdui-col-xs-6">
+                            <button onclick="ImageGen.download();" id="download" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent mdui-btn-block" disabled>下载</button>
+                        </div>
+                    </div>
+                </li>
+                <li class="mdui-divider-inset mdui-m-y-0"></li>
+                <li class="mdui-list-item ulstyle">
+                    <div class="mdui-list-item-content mdui-row">
+                        <div class="mdui-col-xs-6">
+                            <a id="link1" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent mdui-btn-block" href="https://bbaasite.cn/">bbaa的博客</a>
+                        </div>
+                        <div class="mdui-col-xs-6">
+                            <a id="link2" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent mdui-btn-block" href="https://bbaasite.cn/jump.php?href=aHR0cDovL3Rqc2Jsb2cudGsv">TJUGERKFER's Blog</a>
+                        </div>
+                    </div>
+                </li>
+                <li class="mdui-divider-inset mdui-m-y-0"></li>
+            </ul>
+        </div>
+        <script>
+            window.$$=mdui.JQ;
+            window.ImageGen={
+                canvas:"",
+                ctx:"",
+                idata:{},
+                index:0,
+                Output:"",
+                Source:"",
+                filename:"",
+                mode:"default",
+                LoadImage:function(Url){
+                    $$("#gen").attr("disabled","");
+                    this.Source=$$("#Source")[0];
+                    $$(this.Source).css("width","");
+                    $$(this.Source).css("height","");
+                    $$(this.Output).css("width","");
+                    $$(this.Output).css("height","");
+                    $$(this.canvas).css("width","");
+                    $$(this.canvas).css("height","");
+                    this.Source.onload=(function(a){
+                        return function(){
+                            a.canvas.width=this.width;
+                            a.canvas.height=this.height;
+                            a.ctx.drawImage(this,0,0);
+                            $$("#gen").removeAttr("disabled");
+                            var toWidth=(document.documentElement.clientWidth-120)/2;
+                            $$(a.Source).css("width",+(this.width<toWidth ? this.width : toWidth)+"px")
+                            $$(a.Source).css("height",(this.width<toWidth ? this.height : this.height * (toWidth/this.Width))+"px")
+                            $$(a.Output).css("width",+(this.width<toWidth ? this.width : toWidth)+"px")
+                            $$(a.Output).css("height",(this.width<toWidth ? this.height : this.height * (toWidth/this.Width))+"px")
+                            $$(a.canvas).css("width",+(this.width<toWidth ? this.width : toWidth)+"px")
+                            $$(a.canvas).css("height",(this.width<toWidth ? this.height : this.height * (toWidth/this.Width))+"px")
+                            $$(a.Source).show();
+                        }
+                    })(this);
+                    this.Source.src=Url;
+                    $$("#upload-info").hide();
+                    $$("#Output").hide();
+                    $$("#download").attr("disabled","")
+                },
+                gen:function(){
+                    $$("#gen").attr("disabled","");
+                    if(!this.Source.complete) return;
+                    this.ctx.drawImage(this.Source,0,0);
+                    $$("#Output").hide();
+                    $$("#Drawing").show();
+                    //获取像素源数据
+                    this.idata=this.ctx.getImageData(0,0,this.canvas.width,this.canvas.height);
+                    var alldata=this.idata.data.length;//获取
+                    this.PixelProcess[this.mode].that=this;
+                    this.PixelProcess[this.mode].init(this.canvas.width,this.canvas.height);
+                    var LoopId=setInterval((function(){
+                        for(var l=0,w=this.canvas.width;l<w;l++) {
+                            var PixelData=this.PixelProcess[this.mode].method(this.idata.data[this.index],this.idata.data[this.index+1],this.idata.data[this.index+2],this.idata.data[this.index+3]);
+                            if(PixelData===false) {
+                                PixelData=this.ctx.getImageData(l,Math.floor(Math.floor(this.index/4)/this.canvas.width),1,1).data;
+                            }
+                            this.idata.data[this.index]=PixelData[0];
+                            this.idata.data[this.index+1]=PixelData[1];
+                            this.idata.data[this.index+2]=PixelData[2];
+                            this.idata.data[this.index+3]=PixelData[3];
+                            this.index+=4;
+                            if(this.index>=alldata) {clearInterval(LoopId);this.index=0;this.complete();}
+                        }
+                        this.ctx.putImageData(this.idata,0,0);
+                    }).bind(this),1000-$$("#speed").val());
+                },
+                PixelProcess:{
+                    //这里定义每个像素点的处理方法
+                    default:{
+                        //this作用域
+                        method:function(r,g,b,a){//red , green , blue , alpha 主方法
+                            r=(255-r) & this.PixelData[this.that.index];
+                            g=(255-g) & this.PixelData[this.that.index+1];
+                            b=(255-b) & this.PixelData[this.that.index+2];
+                            return [r,g,b,a];
+                        },
+                        init:function(w,h){ //width height
+                            this.options.size=parseInt(this.options.size);
+                            this.width=w;this.height=h;
+                            var MergeCtx=document.createElement("canvas").getContext("2d");
+                            MergeCtx.canvas.width=w;
+                            MergeCtx.canvas.height=h;
+                            for(var y=0;y<h;y+=this.options.size){
+                                for(var x=0;x<w;x+=this.options.size){
+                                    switch(Math.floor(Math.random()*3)){
+                                        case 0:
+                                            MergeCtx.fillStyle="#ff0000";
+                                            break;
+                                        case 1:
+                                            MergeCtx.fillStyle="#00ff00";
+                                            break;
+                                        case 2:
+                                            MergeCtx.fillStyle="#0000ff";
+                                            break
+                                    }
+                                    MergeCtx.fillRect(x,y,this.options.size,this.options.size);
+                                }
+                            }
+                            this.PixelData=MergeCtx.getImageData(0,0,w,h).data;
+                            //this.index=0;
+                        },
+                        options:{
+                            size:2
+                        }
+                    },
+                    alphacover:{
+                        method:function(r,g,b,a){//red , green , blue , alpha 主方法
+                            var PixelData=new ImageData(1,1);
+                            PixelData.data[0]=(255-r);//反色
+                            PixelData.data[1]=(255-g);
+                            PixelData.data[2]=(255-b);
+                            PixelData.data[3]=a;
+                            //反色图片put回去
+                            var x=Math.floor(this.that.index/4) % this.that.canvas.width,y=Math.floor(Math.floor(this.that.index/4)/this.that.canvas.width);
+                            this.that.ctx.putImageData(PixelData,x,y)
+                            this.that.ctx.fillStyle="rgba("+this.PixelData[this.that.index]+","+this.PixelData[this.that.index+1]+","+this.PixelData[this.that.index+2]+","+this.options.alpha+")";
+                            this.that.ctx.fillRect(x,y,1,1);
+                            return false; //return false 告诉引擎不要修改原像素
+                        },
+                        init:function(w,h){ //width height
+                            this.options.size=parseInt(this.options.size);
+                            this.width=w;this.height=h;
+                            var MergeCtx=document.createElement("canvas").getContext("2d");
+                            MergeCtx.canvas.width=w;
+                            MergeCtx.canvas.height=h;
+                            for(var y=0;y<h;y+=this.options.size){
+                                for(var x=0;x<w;x+=this.options.size){
+                                    switch(Math.floor(Math.random()*3)){
+                                        case 0:
+                                            MergeCtx.fillStyle = "rgb(255,0,0)"
+                                            break;
+                                        case 1:
+                                            MergeCtx.fillStyle = "rgb(0,255,0)"
+                                            break;
+                                        case 2:
+                                            MergeCtx.fillStyle = "rgb(255,0,255)"
+                                            break
+                                    }
+                                    MergeCtx.fillRect(x,y,this.options.size,this.options.size);
+                                }
+                            }
+                            this.PixelData=MergeCtx.getImageData(0,0,w,h).data;
+                        },
+                        options:{
+                            size:1,
+                            alpha:0.5
+                        }
+                    }
+                },
+                complete:function(){
+                    this.Output.onload=(function(o){
+                        return function(){
+                            $$(o.canvas).hide();
+                            $$(this).show();
+                            $$("#gen").removeAttr("disabled");
+                        }
+                    })(this);
+                    $$("#download").removeAttr("disabled");
+                    this.Output.src=ImageGen.canvas.toDataURL();
+                },
+                download:function(){
+                    var a=document.createElement("a");
+                    a.download=this.filename+".patch.png";
+                    a.href=this.Output.src;
+                    a.click();
+                },
+                init:function(){
+                    this.Output=$$("#Output")[0];
+                    var CanvasEle=$$("#Drawing")[0];
+                    this.canvas=CanvasEle;
+                    this.ctx=CanvasEle.getContext("2d");
+                    $$("#gen").attr("disabled","");
+                    //生成Select
+                    var sel=$$("#mode");
+                    for (item in this.PixelProcess) {
+                        var o=document.createElement("option");
+                        o.innerText=item;
+                        o.value=item;
+                        this.PixelProcess[item].that=this;
+                        sel.append(o);
+                    }
+                    this.updataOptions(this.mode);
+                    sel.on("change",(function(t){
+                        return function(){
+                            t.mode=this.value;
+                            t.updataOptions(this.value);
+                        }
+                    })(this));
+                },
+                updataOptions:function(mode){
+                    $$("#modeset").html("");
+                    for(item in this.PixelProcess[mode].options) {
+                        var rowContainer=document.createElement("div");
+                        $$(rowContainer).addClass("mdui-row");
+                        rowContainer=$$("#modeset").append(rowContainer).children().last()
+                        var titleContainer=document.createElement("div");
+                        titleContainer=$$(titleContainer).addClass("mdui-col-xs-3").css("margin-top","35px");
+                        titleContainer.html("<span><strong>"+item+"</strong></span>")
+                        rowContainer.append(titleContainer);
+                        var inputContainer=document.createElement("div");
+                        inputContainer=$$(inputContainer).addClass("mdui-col-xs-9");
+                        inputContainer.html('<div class="mdui-textfield mdui-textfield-floating-label"><label class="mdui-textfield-label">Value</label><input class="mdui-textfield-input" type="text"/></div>')
+                        rowContainer.append(inputContainer);
+                        inputContainer.find("input").val(this.PixelProcess[mode].options[item].toString());
+                        mdui.updateTextFields();
+                        inputContainer.find("input").on("keydown",(function(t,item){
+                            return function(){
+                                t.PixelProcess[mode].options[item]=this.value;
+                            }
+                        })(this,item));
+                        inputContainer.find("input").on("change",(function(t,item){
+                            return function(){
+                                t.PixelProcess[mode].options[item]=this.value;
+                            }
+                        })(this,item));
+                    }
+                }
+                
+            };
+            ImageGen.init();
+            $$("#choicePic").on("click",function(){
+                $$("#file")[0].click();
+            })
+            $$("#file").on("change",function(){
+                try{
+                    if (!this.files[0].type.match('image.*')) {
+                        return;
+                    }
+                } catch(e) {
+                    return;
+                }
+                var FileNameArr=this.files[0].name.split(".");
+                FileNameArr.pop();
+                ImageGen.filename=FileNameArr.join(".")
+                var Reader=new FileReader();
+                Reader.onload=function(e){
+                    ImageGen.LoadImage(e.target.result);
+                }
+                Reader.readAsDataURL(this.files[0])
+            })
+        </script>
+    </body>
+</html>
