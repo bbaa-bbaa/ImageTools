@@ -188,23 +188,28 @@
                     $$("#Drawing").show();
                     //获取像素源数据
                     this.idata=this.ctx.getImageData(0,0,this.canvas.width,this.canvas.height);
-                    var alldata=this.idata.data.length;//获取
-                    this.PixelProcess[this.mode].that=this;
+                    var alldata=this.idata.data.length;//获取数据个数
+                    this.PixelProcess[this.mode].that=this;//暴露this给Pixel处理模块
                     this.PixelProcess[this.mode].init(this.canvas.width,this.canvas.height);
+                    //初始化Pixel处理
+                    //循环结构
                     var LoopId=setInterval((function(){
-                        for(var l=0,w=this.canvas.width;l<w;l++) {
+                        //循环结构
+                        for(var l=0,w=this.canvas.width;l<w;l++) {//for处理一行数据
+                            //调用像素点处理方法，处理单个像素点数据
                             var PixelData=this.PixelProcess[this.mode].method(this.idata.data[this.index],this.idata.data[this.index+1],this.idata.data[this.index+2],this.idata.data[this.index+3]);
-                            if(PixelData===false) {
+                            if(PixelData===false) {//方法不返回像素点数据
                                 PixelData=this.ctx.getImageData(l,Math.floor(Math.floor(this.index/4)/this.canvas.width),1,1).data;
+                                //获取修改后的像素点数据
                             }
                             this.idata.data[this.index]=PixelData[0];
                             this.idata.data[this.index+1]=PixelData[1];
                             this.idata.data[this.index+2]=PixelData[2];
-                            this.idata.data[this.index+3]=PixelData[3];
+                            this.idata.data[this.index+3]=PixelData[3];//合并修改
                             this.index+=4;
-                            if(this.index>=alldata) {clearInterval(LoopId);this.index=0;this.complete();}
+                            if(this.index>=alldata) {clearInterval(LoopId);this.index=0;this.complete();}//循环完毕后的处理
                         }
-                        this.ctx.putImageData(this.idata,0,0);
+                        this.ctx.putImageData(this.idata,0,0);//把像素点数据放回Canvas
                     }).bind(this),1000-$$("#speed").val());
                 },
                 PixelProcess:{
@@ -212,19 +217,20 @@
                     default:{
                         //this作用域
                         method:function(r,g,b,a){//red , green , blue , alpha 主方法
-                            r=(255-r) & this.PixelData[this.that.index];
+                            r=(255-r) & this.PixelData[this.that.index]; //反色 并使用and操作符"&"隔壁像素点数据
                             g=(255-g) & this.PixelData[this.that.index+1];
                             b=(255-b) & this.PixelData[this.that.index+2];
-                            return [r,g,b,a];
+                            return [r,g,b,a];//返回rgba值
                         },
                         init:function(w,h){ //width height
-                            this.options.size=parseInt(this.options.size);
-                            this.width=w;this.height=h;
-                            var MergeCtx=document.createElement("canvas").getContext("2d");
-                            MergeCtx.canvas.width=w;
-                            MergeCtx.canvas.height=h;
+                            this.options.size=parseInt(this.options.size); //处理合并像素点大小(String to Int)
+                            this.width=w;this.height=h;//设置宽高度(在此貌似无意义)
+                            var MergeCtx=document.createElement("canvas").getContext("2d");//创建新的Canvas并获取ctx对象
+                            MergeCtx.canvas.width=w;//设置宽
+                            MergeCtx.canvas.height=h;//设置高
                             for(var y=0;y<h;y+=this.options.size){
                                 for(var x=0;x<w;x+=this.options.size){
+                                    //生成需要合并到原图的数据图像（就是一堆像素点....)
                                     switch(Math.floor(Math.random()*3)){
                                         case 0:
                                             MergeCtx.fillStyle="#ff0000";
@@ -239,35 +245,39 @@
                                     MergeCtx.fillRect(x,y,this.options.size,this.options.size);
                                 }
                             }
-                            this.PixelData=MergeCtx.getImageData(0,0,w,h).data;
+                            this.PixelData=MergeCtx.getImageData(0,0,w,h).data; //获取合并图像的像素点源数据
                             //this.index=0;
                         },
                         options:{
-                            size:2
+                            size:2 //合并图像的每小块像素点大小
                         }
                     },
                     alphacover:{
                         method:function(r,g,b,a){//red , green , blue , alpha 主方法
-                            var PixelData=new ImageData(1,1);
+                            var PixelData=new ImageData(1,1);//新建像素数据1*1
                             PixelData.data[0]=(255-r);//反色
                             PixelData.data[1]=(255-g);
                             PixelData.data[2]=(255-b);
                             PixelData.data[3]=a;
                             //反色图片put回去
+                            //计算xy值
                             var x=Math.floor(this.that.index/4) % this.that.canvas.width,y=Math.floor(Math.floor(this.that.index/4)/this.that.canvas.width);
-                            this.that.ctx.putImageData(PixelData,x,y)
+                            this.that.ctx.putImageData(PixelData,x,y) //将反色后的颜色设置
+                            //通过init方法生成的合并源图像（把Alpha值设置为1即可看到原图) 设置fillStyle
                             this.that.ctx.fillStyle="rgba("+this.PixelData[this.that.index]+","+this.PixelData[this.that.index+1]+","+this.PixelData[this.that.index+2]+","+this.options.alpha+")";
-                            this.that.ctx.fillRect(x,y,1,1);
-                            return false; //return false 告诉引擎不要修改原像素
+                            this.that.ctx.fillRect(x,y,1,1);//在源画布绘制矩形
+                            return false; //return false 由于此方法已经在源画布(this.that.ctx)上进行操作，没有修改后的像素点数据
+                            //告诉引擎自取原数据
                         },
                         init:function(w,h){ //width height
-                            this.options.size=parseInt(this.options.size);
-                            this.width=w;this.height=h;
+                            this.options.size=parseInt(this.options.size);//获取每像素点大小
+                            this.width=w;this.height=h;//设置宽高 在此无意义
                             var MergeCtx=document.createElement("canvas").getContext("2d");
                             MergeCtx.canvas.width=w;
-                            MergeCtx.canvas.height=h;
+                            MergeCtx.canvas.height=h;//同default
                             for(var y=0;y<h;y+=this.options.size){
                                 for(var x=0;x<w;x+=this.options.size){
+                                    //生成合并画布
                                     switch(Math.floor(Math.random()*3)){
                                         case 0:
                                             MergeCtx.fillStyle = "rgb(255,0,0)"
@@ -276,13 +286,13 @@
                                             MergeCtx.fillStyle = "rgb(0,255,0)"
                                             break;
                                         case 2:
-                                            MergeCtx.fillStyle = "rgb(255,0,255)"
+                                            MergeCtx.fillStyle = "rgb(0,0,255)"
                                             break
                                     }
                                     MergeCtx.fillRect(x,y,this.options.size,this.options.size);
                                 }
                             }
-                            this.PixelData=MergeCtx.getImageData(0,0,w,h).data;
+                            this.PixelData=MergeCtx.getImageData(0,0,w,h).data;//同上
                         },
                         options:{
                             size:1,
