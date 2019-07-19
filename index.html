@@ -42,14 +42,15 @@
             }
         </style>
         <title>
-            头像生成工具
+            图像处理工具
         </title>
     </head>
     <body class="mdui-theme-primary-cyan mdui-theme-accent-light-blue">
         <div class="mdui-container" style="margin-top:60px">
             <div class="mdui-row">
-                <div class="mdui-col-xs-12"><h1 class="mdui-text-center mdui-m-b-0">像素点头像转换器</h1></div>
-                <div class="mdui-col-xs-12"><h4 class="mdui-text-center mdui-m-t-0">Idea form:TJUGERKFER Made by:bbaa</h4></div>
+                <div class="mdui-col-xs-12"><h1 class="mdui-text-center mdui-m-b-0">图像工具集合</h1></div>
+                <div class="mdui-col-xs-12"><h4 class="mdui-text-center mdui-m-t-0 mdui-m-b-0">主要开发者:bbaa 协助开发:TJUGERKFER</h4></div>
+                <div class="mdui-col-xs-12"><h4 class="mdui-text-center mdui-m-t-0">界面UI来自<a href="https://www.mdui.org/" style="text-decoration:unset;">MDUI</a></h4></div>
             </div>
             <div class="mdui-row">
                 <div class="mdui-col-xs-6">
@@ -79,7 +80,7 @@
                 <li class="mdui-list-item ulstyle">
                     <div class="mdui-list-item-content mdui-row">
                         <div class="mdui-col-xs-3 mdui-text-center"  style="margin-top:9px;">
-                            <span><strong>工作速度</strong></span>
+                            <span><strong>动画效果速度</strong></span>
                         </div>
                         <div class="mdui-col-xs-9">
                             <label class="mdui-slider">
@@ -149,7 +150,7 @@
                 Output:"",
                 Source:"",
                 filename:"",
-                mode:"default",
+                mode:"scanBoundary",
                 LoadImage:function(Url){
                     $$("#gen").attr("disabled","");
                     this.Source=$$("#Source")[0];
@@ -190,7 +191,11 @@
                     this.idata=this.ctx.getImageData(0,0,this.canvas.width,this.canvas.height);
                     var alldata=this.idata.data.length;//获取数据个数
                     this.PixelProcess[this.mode].that=this;//暴露this给Pixel处理模块
-                    this.PixelProcess[this.mode].init(this.canvas.width,this.canvas.height);
+                    if(this.PixelProcess[this.mode].init(this.canvas.width,this.canvas.height)) {
+                        this.index=0;
+                        this.complete();
+                        return;
+                    }
                     //初始化Pixel处理
                     //循环结构
                     var LoopId=setInterval((function(){
@@ -198,39 +203,143 @@
                         for(var l=0,w=this.canvas.width;l<w;l++) {//for处理一行数据
                             //调用像素点处理方法，处理单个像素点数据
                             var PixelData=this.PixelProcess[this.mode].method(this.idata.data[this.index],this.idata.data[this.index+1],this.idata.data[this.index+2],this.idata.data[this.index+3]);
-                            if(PixelData===false) {//方法不返回像素点数据
-                                PixelData=this.ctx.getImageData(l,Math.floor(Math.floor(this.index/4)/this.canvas.width),1,1).data;
-                                //获取修改后的像素点数据
+                            if(PixelData) {
+                                this.idata.data[this.index]=PixelData[0];
+                                this.idata.data[this.index+1]=PixelData[1];
+                                this.idata.data[this.index+2]=PixelData[2];
+                                this.idata.data[this.index+3]=PixelData[3];//合并修改
                             }
-                            this.idata.data[this.index]=PixelData[0];
-                            this.idata.data[this.index+1]=PixelData[1];
-                            this.idata.data[this.index+2]=PixelData[2];
-                            this.idata.data[this.index+3]=PixelData[3];//合并修改
                             this.index+=4;
-                            if(this.index>=alldata) {clearInterval(LoopId);this.index=0;this.complete();}//循环完毕后的处理
+							//debugger;
+                            if(this.index>=alldata) {clearInterval(LoopId);this.index=0;this.complete();break;}//循环完毕后的处理
                         }
-                        this.ctx.putImageData(this.idata,0,0);//把像素点数据放回Canvas
-                    }).bind(this),1000-$$("#speed").val());
+                        if(PixelData) this.ctx.putImageData(this.idata,0,0);//把像素点数据放回Canvas
+                    }).bind(this),1000-$$("#speed").val());//TJUGERKFER注:动画时间延迟
                 },
                 PixelProcess:{
                     //这里定义每个像素点的处理方法
-                    default:{
+					scanBoundary:{
+                        name:"搜索物体边界 - 基于色差",
+                        method:function(r,g,b,a){
+							var x=Math.floor(this.that.index/4) % this.width,y=Math.floor(Math.floor(this.that.index/4)/this.width);
+							var GreyList=[
+								[this.getPixelGrey(x-1,y-1),this.getPixelGrey(x,y-1),this.getPixelGrey(x+1,y-1)],
+								[this.getPixelGrey(x-1,y),this.getPixelGrey(x,y),this.getPixelGrey(x+1,y)],
+								[this.getPixelGrey(x-1,y-1),this.getPixelGrey(x,y-1),this.getPixelGrey(x+1,y-1)]
+							];
+							var diff=0;
+							for(var y=0;y<3;y++){
+								for(var x=0;x<3;x++){
+									
+									if(!GreyList[y][x]){
+										GreyList[y][x]=GreyList[1][1]
+										continue;
+									}
+			                        if(y==1&&x==1) continue;
+									if(Math.abs(GreyList[y][x]-GreyList[1][1])<this.options.diff.value){
+										return [255,255,255,255];
+									}
+								
+								}
+							}
+								return [0,0,0,255]
+							//return [this.getPixelGrey(x,y),this.getPixelGrey(x,y),this.getPixelGrey(x,y),255];
+                        },
+                        init:function(w,h){
+							this.width=w;this.height=h;
+                        },
+						getPixelGrey:function(x,y){
+							var index=(y*this.width+x)*4;
+							var pixelData=this.that.idata.data;
+							return (typeof pixelData[index]!="undefined" ? Math.floor((pixelData[index]+pixelData[index+1]+pixelData[index+2])/3): false);
+						},
+                        options:{
+							diff:{
+                                description:"最大差值",
+                                type:"int",
+								value:30
+							}
+                        }
+                    },
+                    blindwater:{
+                        name:"数字盲水印",
+                        method:function(r,g,b,a){
+                        },
+                        init:function(w,h){
+							alert("该功能未完成");
+							return true;
+                        },
+                        seededRandom:function(min,max) {
+                            max = max || 1;
+                            min = min || 0;
+                            this.options.seed.value = (this.options.seed.value * 9301 + 49297) % 233280;
+                            var rnd = this.options.seed.value / 233280;
+                            return Math.floor(rnd * (max - min + 1)) + min;   // Math.ceil实现取整功能，可以根据需要取消取整
+                        },
+                        options:{
+                            file:{
+                                description:"水印图像",
+                                type:"file",
+                                updateOption:function(parentJQ){
+                                    var buttonContainer=document.createElement("div");
+                                    buttonContainer=$$(buttonContainer).addClass("mdui-col-xs-9");
+                                    var fileSelect=$$(document.createElement("button"));
+                                    fileSelect.addClass("mdui-btn").addClass("mdui-btn-raised").addClass("mdui-btn-block").addClass("mdui-color-theme-accent").addClass("mdui-ripple");
+                                    fileSelect.get(0).style.cssText="color: white!important;margin-top:25px"
+                                    fileSelect.text(typeof this.filename=="undefined" ? "选择水印文件" : this.filename);
+                                    fileSelect.on("click",(function(){
+                                        var fileSelecter=$$(document.createElement("input"));
+                                        fileSelecter.attr("type","file");
+                                        fileSelecter.on("change",(function(t){
+                                            return function(){
+                                                try{
+                                                    if (!this.files[0].type.match('image.*')) {
+                                                        return;
+                                                    }
+                                                } catch(e) {
+                                                    return;
+                                                }
+                                                var Reader=new FileReader();
+                                                Reader.onload=(function(file,t){
+                                                    return (function(e){
+                                                        this.value=e.target.result;
+                                                        this.filename=file.name;
+                                                        fileSelect.text(file.name)
+                                                    }).bind(t);
+                                                })(this.files[0],t);
+                                                Reader.readAsDataURL(this.files[0])
+                                            }
+                                        })(this));
+                                        fileSelecter.get(0).click();
+                                    }).bind(this));
+                                    buttonContainer.append(fileSelect);
+                                    parentJQ.append(buttonContainer);
+                                }
+                            },
+                            seed:{
+                                description:"随机种子",
+                                value:new Date().getTime(),
+                                type:"int"
+                            }
+                        }
+                    },
+                    toPixel:{
                         //this作用域
+                        name:"图像像素化处理",
                         method:function(r,g,b,a){//red , green , blue , alpha 主方法
-                            r=(255-r) & this.PixelData[this.that.index]; //反色 并使用and操作符"&"隔壁像素点数据
+                            r=(255-r) & this.PixelData[this.that.index];
                             g=(255-g) & this.PixelData[this.that.index+1];
                             b=(255-b) & this.PixelData[this.that.index+2];
-                            return [r,g,b,a];//返回rgba值
+                            return [r,g,b,a];
                         },
                         init:function(w,h){ //width height
-                            this.options.size=parseInt(this.options.size); //处理合并像素点大小(String to Int)
-                            this.width=w;this.height=h;//设置宽高度(在此貌似无意义)
-                            var MergeCtx=document.createElement("canvas").getContext("2d");//创建新的Canvas并获取ctx对象
-                            MergeCtx.canvas.width=w;//设置宽
-                            MergeCtx.canvas.height=h;//设置高
-                            for(var y=0;y<h;y+=this.options.size){
-                                for(var x=0;x<w;x+=this.options.size){
-                                    //生成需要合并到原图的数据图像（就是一堆像素点....)
+                            //this.options.size.value=parseInt(this.options.size.value);
+                            this.width=w;this.height=h;
+                            var MergeCtx=document.createElement("canvas").getContext("2d");
+                            MergeCtx.canvas.width=w;
+                            MergeCtx.canvas.height=h;
+                            for(var y=0;y<h;y+=this.options.size.value){
+                                for(var x=0;x<w;x+=this.options.size.value){
                                     switch(Math.floor(Math.random()*3)){
                                         case 0:
                                             MergeCtx.fillStyle="#ff0000";
@@ -242,42 +351,87 @@
                                             MergeCtx.fillStyle="#0000ff";
                                             break
                                     }
-                                    MergeCtx.fillRect(x,y,this.options.size,this.options.size);
+                                    MergeCtx.fillRect(x,y,this.options.size.value,this.options.size.value);
                                 }
                             }
-                            this.PixelData=MergeCtx.getImageData(0,0,w,h).data; //获取合并图像的像素点源数据
+                            this.PixelData=MergeCtx.getImageData(0,0,w,h).data;
                             //this.index=0;
                         },
                         options:{
-                            size:2 //合并图像的每小块像素点大小
+                            size:{
+                                description:"每个方块的大小",
+                                type:"int",
+                                value:2,
+                            }
                         }
                     },
-                    alphacover:{
+                    invertAlphaCover:{
+                        name:"透明颜色覆盖-反色",
                         method:function(r,g,b,a){//red , green , blue , alpha 主方法
-                            var PixelData=new ImageData(1,1);//新建像素数据1*1
+                            var PixelData=new ImageData(1,1);
                             PixelData.data[0]=(255-r);//反色
                             PixelData.data[1]=(255-g);
                             PixelData.data[2]=(255-b);
                             PixelData.data[3]=a;
                             //反色图片put回去
-                            //计算xy值
                             var x=Math.floor(this.that.index/4) % this.that.canvas.width,y=Math.floor(Math.floor(this.that.index/4)/this.that.canvas.width);
-                            this.that.ctx.putImageData(PixelData,x,y) //将反色后的颜色设置
-                            //通过init方法生成的合并源图像（把Alpha值设置为1即可看到原图) 设置fillStyle
-                            this.that.ctx.fillStyle="rgba("+this.PixelData[this.that.index]+","+this.PixelData[this.that.index+1]+","+this.PixelData[this.that.index+2]+","+this.options.alpha+")";
-                            this.that.ctx.fillRect(x,y,1,1);//在源画布绘制矩形
-                            return false; //return false 由于此方法已经在源画布(this.that.ctx)上进行操作，没有修改后的像素点数据
-                            //告诉引擎自取原数据
+                            this.that.ctx.putImageData(PixelData,x,y)
+                            this.that.ctx.fillStyle="rgba("+this.PixelData[this.that.index]+","+this.PixelData[this.that.index+1]+","+this.PixelData[this.that.index+2]+","+this.options.alpha.value+")";
+                            this.that.ctx.fillRect(x,y,1,1);
+                            return false; //return false 告诉引擎不要修改原像素
                         },
                         init:function(w,h){ //width height
-                            this.options.size=parseInt(this.options.size);//获取每像素点大小
-                            this.width=w;this.height=h;//设置宽高 在此无意义
+                            //this.options.size.value=parseInt(this.options.size.value);
+                            this.width=w;this.height=h;
                             var MergeCtx=document.createElement("canvas").getContext("2d");
                             MergeCtx.canvas.width=w;
-                            MergeCtx.canvas.height=h;//同default
-                            for(var y=0;y<h;y+=this.options.size){
-                                for(var x=0;x<w;x+=this.options.size){
-                                    //生成合并画布
+                            MergeCtx.canvas.height=h;
+                            for(var y=0;y<h;y+=this.options.size.value){
+                                for(var x=0;x<w;x+=this.options.size.value){
+                                    switch(Math.floor(Math.random()*3)){
+                                        case 0:
+                                            MergeCtx.fillStyle = "rgb(255,0,0)"
+                                            break;
+                                        case 1:
+                                            MergeCtx.fillStyle = "rgb(0,255,0)"
+                                            break;
+                                        case 2:
+                                            MergeCtx.fillStyle = "rgb(255,0,255)"
+                                            break
+                                    }
+                                    MergeCtx.fillRect(x,y,this.options.size.value,this.options.size.value);
+                                }
+                            }
+                            this.PixelData=MergeCtx.getImageData(0,0,w,h).data;
+                        },
+                        options:{
+                            size:{
+                                description:"每个方块的大小",
+                                type:"int",
+                                value:1
+                            },
+                            alpha:{
+                                type:"float",
+                                value:0.5
+                            }
+                        }
+                    },
+                    alphaCover:{
+                        name:"透明颜色覆盖",
+                        method:function(r,g,b,a){//red , green , blue , alpha 主方法
+                            var x=Math.floor(this.that.index/4) % this.that.canvas.width,y=Math.floor(Math.floor(this.that.index/4)/this.that.canvas.width);
+                            this.that.ctx.fillStyle="rgba("+this.PixelData[this.that.index]+","+this.PixelData[this.that.index+1]+","+this.PixelData[this.that.index+2]+","+this.options.alpha.value+")";
+                            this.that.ctx.fillRect(x,y,1,1);
+                            return false; //return false 告诉引擎不要修改原像素
+                        },
+                        init:function(w,h){ //width height
+                            this.options.size.value=parseInt(this.options.size.value);
+                            this.width=w;this.height=h;
+                            var MergeCtx=document.createElement("canvas").getContext("2d");
+                            MergeCtx.canvas.width=w;
+                            MergeCtx.canvas.height=h;
+                            for(var y=0;y<h;y+=this.options.size.value){
+                                for(var x=0;x<w;x+=this.options.size.value){
                                     switch(Math.floor(Math.random()*3)){
                                         case 0:
                                             MergeCtx.fillStyle = "rgb(255,0,0)"
@@ -289,22 +443,58 @@
                                             MergeCtx.fillStyle = "rgb(0,0,255)"
                                             break
                                     }
-                                    MergeCtx.fillRect(x,y,this.options.size,this.options.size);
+                                    MergeCtx.fillRect(x,y,this.options.size.value,this.options.size.value);
                                 }
                             }
-                            this.PixelData=MergeCtx.getImageData(0,0,w,h).data;//同上
+                            this.PixelData=MergeCtx.getImageData(0,0,w,h).data;
                         },
                         options:{
-                            size:1,
-                            alpha:0.5
+                            size:{
+                                description:"每个方块的大小",
+                                type:"int",
+                                value:1
+                            },
+                            alpha:{
+                                type:"float",
+                                value:0.5
+                            }
                         }
-                    }
+                    },
+                    fastalphacover:{
+                        name:"自定义滤镜",
+                        method:function(r,g,b,a){//red , green , blue , alpha 主方法
+                            return false; //return false 告诉引擎不要修改原像素
+                        },
+                        init:function(w,h){ //width height
+                            this.that.ctx.fillStyle=`rgba(${this.options.R.value},${this.options.G.value},${this.options.B.value},${this.options.alpha.value})`;
+                            this.that.ctx.fillRect(0,0,w,h);
+                            return true; //说明init已经直接把图像处理完成，无动画效果
+                        },
+                        options:{
+                            R:{
+                                type:"int",
+                                value:0
+                            },
+                            G:{
+                                type:"int",
+                                value:0
+                            },
+                            B:{
+                                type:"int",
+                                value:0
+                            },
+                            alpha:{
+                                type:"float",
+                                value:0.5
+                            }
+                        }
+                    },
                 },
                 complete:function(){
                     this.Output.onload=(function(o){
                         return function(){
-                            $$(o.canvas).hide();
-                            $$(this).show();
+                            //$$(o.canvas).hide();
+                            //$$(this).show();
                             $$("#gen").removeAttr("disabled");
                         }
                     })(this);
@@ -327,20 +517,20 @@
                     var sel=$$("#mode");
                     for (item in this.PixelProcess) {
                         var o=document.createElement("option");
-                        o.innerText=item;
+                        o.innerText=this.PixelProcess[item].name;
                         o.value=item;
                         this.PixelProcess[item].that=this;
                         sel.append(o);
                     }
-                    this.updataOptions(this.mode);
+                    this.updateOptions(this.mode);
                     sel.on("change",(function(t){
                         return function(){
                             t.mode=this.value;
-                            t.updataOptions(this.value);
+                            t.updateOptions(this.value);
                         }
                     })(this));
                 },
-                updataOptions:function(mode){
+                updateOptions:function(mode){
                     $$("#modeset").html("");
                     for(item in this.PixelProcess[mode].options) {
                         var rowContainer=document.createElement("div");
@@ -348,24 +538,56 @@
                         rowContainer=$$("#modeset").append(rowContainer).children().last()
                         var titleContainer=document.createElement("div");
                         titleContainer=$$(titleContainer).addClass("mdui-col-xs-3").css("margin-top","35px");
-                        titleContainer.html("<span><strong>"+item+"</strong></span>")
+                        titleContainer.html("<span><strong>"+(typeof this.PixelProcess[mode].options[item].description!="undefined" ? this.PixelProcess[mode].options[item].description : item)+"</strong></span>")
                         rowContainer.append(titleContainer);
-                        var inputContainer=document.createElement("div");
-                        inputContainer=$$(inputContainer).addClass("mdui-col-xs-9");
-                        inputContainer.html('<div class="mdui-textfield mdui-textfield-floating-label"><label class="mdui-textfield-label">Value</label><input class="mdui-textfield-input" type="text"/></div>')
-                        rowContainer.append(inputContainer);
-                        inputContainer.find("input").val(this.PixelProcess[mode].options[item].toString());
-                        mdui.updateTextFields();
-                        inputContainer.find("input").on("keydown",(function(t,item){
-                            return function(){
-                                t.PixelProcess[mode].options[item]=this.value;
-                            }
-                        })(this,item));
-                        inputContainer.find("input").on("change",(function(t,item){
-                            return function(){
-                                t.PixelProcess[mode].options[item]=this.value;
-                            }
-                        })(this,item));
+                        if(typeof this.PixelProcess[mode].options[item].type=="undefined") {
+                            this.PixelProcess[mode].options[item].type="text";
+                        }
+                        switch(this.PixelProcess[mode].options[item].type){
+                            case "text":
+                            case "int":
+                            case "float":
+                                //公共代码
+                                var inputContainer=document.createElement("div");
+                                inputContainer=$$(inputContainer).addClass("mdui-col-xs-9");
+                                inputContainer.html('<div class="mdui-textfield mdui-textfield-floating-label"><label class="mdui-textfield-label">Value</label><input class="mdui-textfield-input" type="text"/></div>')
+                                rowContainer.append(inputContainer);
+                                inputContainer.find("input").val(this.PixelProcess[mode].options[item].value.toString());
+                                mdui.updateTextFields();
+                                switch(this.PixelProcess[mode].options[item].type){
+                                    case "int":
+                                        var EventFunction=(function(t,item){
+                                            return function(){
+                                                t.PixelProcess[mode].options[item].value=parseInt(this.value);
+                                            }
+                                        })(this,item);
+                                        break;
+                                    case "float":
+                                        var EventFunction=(function(t,item){
+                                            return function(){
+                                                t.PixelProcess[mode].options[item].value=parseFloat(this.value);
+                                            }
+                                        })(this,item);
+                                        break;
+                                    case "text":
+                                        var EventFunction=(function(t,item){
+                                            return function(){
+                                                t.PixelProcess[mode].options[item].value=this.value;
+                                            }
+                                        })(this,item);
+                                        break;
+                                }
+                                inputContainer.find("input").on("keydown",EventFunction);
+                                inputContainer.find("input").on("change",EventFunction);
+                                break;
+                            case "custom":
+                            default:
+                                if(typeof this.PixelProcess[mode].options[item].updateOption=="function") {
+                                    this.PixelProcess[mode].options[item].updateOption(rowContainer);
+                                }
+                                break;
+                                
+                        }
                     }
                 }
                 
