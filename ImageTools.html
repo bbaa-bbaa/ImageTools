@@ -3,9 +3,9 @@
     <head>
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no"/>
-        <link href="https://cdn.bootcss.com/material-design-icons/3.0.1/iconfont/material-icons.min.css" rel="stylesheet">
-        <link href="https://cdn.bootcss.com/mdui/0.4.2/css/mdui.min.css" rel="stylesheet">
-        <script src="https://cdn.bootcss.com/mdui/0.4.2/js/mdui.min.js"></script>
+        <!--<link href="https://static.bbaasite.cn/material-design-icons/3.0.1/iconfont/material-icons.min.css" rel="stylesheet">-->
+        <link href="https://static.bbaasite.cn/mdui/css/mdui.min.css" rel="stylesheet">
+        <script src="https://static.bbaasite.cn/mdui/js/mdui.min.js"></script>
         <style>
             body {
                 background-color:#fafafa;
@@ -167,12 +167,12 @@
                             a.ctx.drawImage(this,0,0);
                             $$("#gen").removeAttr("disabled");
                             var toWidth=(document.documentElement.clientWidth-120)/2;
-                            $$(a.Source).css("width",+(this.width<toWidth ? this.width : toWidth)+"px")
-                            $$(a.Source).css("height",(this.width<toWidth ? this.height : this.height * (toWidth/this.Width))+"px")
-                            $$(a.Output).css("width",+(this.width<toWidth ? this.width : toWidth)+"px")
-                            $$(a.Output).css("height",(this.width<toWidth ? this.height : this.height * (toWidth/this.Width))+"px")
-                            $$(a.canvas).css("width",+(this.width<toWidth ? this.width : toWidth)+"px")
-                            $$(a.canvas).css("height",(this.width<toWidth ? this.height : this.height * (toWidth/this.Width))+"px")
+                            //$$(a.Source).css("width",+(this.width<toWidth ? this.width : toWidth)+"px")
+                            //$$(a.Source).css("height",(this.width<toWidth ? this.height : this.height * (toWidth/this.Width))+"px")
+                            //$$(a.Output).css("width",+(this.width<toWidth ? this.width : toWidth)+"px")
+                            //$$(a.Output).css("height",(this.width<toWidth ? this.height : this.height * (toWidth/this.Width))+"px")
+                            //$$(a.canvas).css("width",+(this.width<toWidth ? this.width : toWidth)+"px")
+                            //$$(a.canvas).css("height",(this.width<toWidth ? this.height : this.height * (toWidth/this.Width))+"px")
                             $$(a.Source).show();
                         }
                     })(this);
@@ -228,16 +228,20 @@
 								[this.getPixelGrey(x-1,y-1),this.getPixelGrey(x,y-1),this.getPixelGrey(x+1,y-1)]
 							];
 							var diff=0;
+							var c=0;
 							for(var y=0;y<3;y++){
 								for(var x=0;x<3;x++){
 									
-									if(!GreyList[y][x]){
+									if(GreyList[y][x]===false){
 										GreyList[y][x]=GreyList[1][1]
 										continue;
 									}
 			                        if(y==1&&x==1) continue;
-									if(Math.abs(GreyList[y][x]-GreyList[1][1])<this.options.diff.value){
-										return [255,255,255,255];
+									if(Math.abs(GreyList[y][x]-GreyList[1][1])<=this.options.diff.value){
+										c++;
+										if(c>=this.options.count.value) {
+											return [255,255,255,255];
+										}
 									}
 								
 								}
@@ -249,6 +253,7 @@
 							this.width=w;this.height=h;
                         },
 						getPixelGrey:function(x,y){
+							if(x<0||y<0||x>this.width||y>this.height)return false;
 							var index=(y*this.width+x)*4;
 							var pixelData=this.that.idata.data;
 							return (typeof pixelData[index]!="undefined" ? Math.floor((pixelData[index]+pixelData[index+1]+pixelData[index+2])/3): false);
@@ -257,7 +262,12 @@
 							diff:{
                                 description:"最大差值",
                                 type:"int",
-								value:30
+								value:25
+							},
+							count:{
+								description:"差值在范围内的次数",
+                                type:"int",
+								value:1
 							}
                         }
                     },
@@ -327,9 +337,9 @@
                         //this作用域
                         name:"图像像素化处理",
                         method:function(r,g,b,a){//red , green , blue , alpha 主方法
-                            r=(255-r) & this.PixelData[this.that.index];
-                            g=(255-g) & this.PixelData[this.that.index+1];
-                            b=(255-b) & this.PixelData[this.that.index+2];
+                            r=(this.options.invert.value ? 255-r : r) & this.PixelData[this.that.index];
+                            g=(this.options.invert.value ? 255-g : g) & this.PixelData[this.that.index+1];
+                            b=(this.options.invert.value ? 255-b : b) & this.PixelData[this.that.index+2];
                             return [r,g,b,a];
                         },
                         init:function(w,h){ //width height
@@ -362,7 +372,12 @@
                                 description:"每个方块的大小",
                                 type:"int",
                                 value:2,
-                            }
+                            },
+							invert:{
+								description:"反色",
+								type:"bool",
+								value:true
+							}
                         }
                     },
                     invertAlphaCover:{
@@ -396,7 +411,7 @@
                                             MergeCtx.fillStyle = "rgb(0,255,0)"
                                             break;
                                         case 2:
-                                            MergeCtx.fillStyle = "rgb(255,0,255)"
+                                            MergeCtx.fillStyle = "rgb(0,0,255)"
                                             break
                                     }
                                     MergeCtx.fillRect(x,y,this.options.size.value,this.options.size.value);
@@ -537,7 +552,7 @@
                         $$(rowContainer).addClass("mdui-row");
                         rowContainer=$$("#modeset").append(rowContainer).children().last()
                         var titleContainer=document.createElement("div");
-                        titleContainer=$$(titleContainer).addClass("mdui-col-xs-3").css("margin-top","35px");
+                        titleContainer=$$(titleContainer).addClass("mdui-col-xs-3").css("margin-top","31.5px");
                         titleContainer.html("<span><strong>"+(typeof this.PixelProcess[mode].options[item].description!="undefined" ? this.PixelProcess[mode].options[item].description : item)+"</strong></span>")
                         rowContainer.append(titleContainer);
                         if(typeof this.PixelProcess[mode].options[item].type=="undefined") {
@@ -580,6 +595,20 @@
                                 inputContainer.find("input").on("keydown",EventFunction);
                                 inputContainer.find("input").on("change",EventFunction);
                                 break;
+							case "bool":
+								var inputContainer=document.createElement("div");
+                                inputContainer=$$(inputContainer).addClass("mdui-col-xs-9");
+								inputContainer.html('<label class="mdui-switch" style="margin-top:20px;"><input type="checkbox"/><i class="mdui-switch-icon"></i></label>');
+								rowContainer.append(inputContainer);
+								inputContainer.find("input").prop("checked",this.PixelProcess[mode].options[item].value)
+								var EventFunction=(function(t,item){
+                                    return function(){
+                                        t.PixelProcess[mode].options[item].value=inputContainer.find("input").prop("checked");
+                                    }
+                                })(this,item);
+								inputContainer.find("input").on("click",EventFunction);
+                                inputContainer.find("input").on("change",EventFunction);
+								
                             case "custom":
                             default:
                                 if(typeof this.PixelProcess[mode].options[item].updateOption=="function") {
@@ -588,6 +617,8 @@
                                 break;
                                 
                         }
+						$$("#modeset").append('<li class="mdui-divider-inset mdui-m-y-0"></li>')
+						
                     }
                 }
                 
