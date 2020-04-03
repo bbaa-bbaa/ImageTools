@@ -150,7 +150,7 @@
                 Output:"",
                 Source:"",
                 filename:"",
-                mode:"scanBoundary",
+                mode:"grey",
                 LoadImage:function(Url){
                     $$("#gen").attr("disabled","");
                     this.Source=$$("#Source")[0];
@@ -218,6 +218,61 @@
                 },
                 PixelProcess:{
                     //这里定义每个像素点的处理方法
+		    grey: {
+                    name: "灰度化",
+                    method: function (r, g, b, a) {
+                        let grey = Math.round((r + g + b) / 3)
+                        return [grey, grey, grey, 255]
+                    },
+                    init: function (w, h) {
+                        this.width = w;
+                        this.height = h;
+                    },
+                    options: {
+                    }
+                },
+                ToBlankAndWhite: {
+                    name: "二值化",
+                    method: function (r, g, b, a) {
+                        var x = Math.floor(this.that.index / 4) % this.width,
+                            y = Math.floor(Math.floor(this.that.index / 4) / this.width);
+                        if (y == this.height - 1 && x < this.width / 4 && (!this.options.opposite.value ? ((r + g +
+                            b) / 3 > this.options.grey.value) : !((r + g + b) / 3 > this.options.grey
+                                .value))) {
+                            this.LastBlank = x;
+                        }
+                        return (this.options.opposite.value ? ((r + g + b) / 3 > this.options.grey.value) : ((
+                            r + g + b) / 3 < this.options.grey.value)) ? [0, 0, 0, 255] : [255, 255, 255,
+                                255
+                            ];
+                    },
+                    init: function (w, h) {
+                        this.width = w;
+                        this.height = h;
+                        /*this.complete = (function () {
+                            let x = this.LastBlank
+                            this.that.ctx.fillStyle = "rgb(255,255,255)";
+                            this.that.ctx.beginPath();
+                            this.that.ctx.moveTo(x, this.height);
+                            this.that.ctx.lineTo(0, this.height);
+                            this.that.ctx.lineTo(0, this.height - Math.floor(x * Math.tan(Math.PI / 3)))
+                            this.that.ctx.lineTo(x, this.height);
+                            this.that.ctx.fill();
+                        }).bind(this)*/
+                    },
+                    options: {
+                        grey: {
+                            description: "灰度大小",
+                            type: "int",
+                            value: 40
+                        },
+                        opposite: {
+                            description: "反向",
+                            type: "bool",
+                            value: false
+                        }
+                    }
+                },
 					scanBoundary:{
                         name:"搜索物体边界 - 基于色差",
                         method:function(r,g,b,a){
