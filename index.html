@@ -84,7 +84,7 @@
                         </div>
                         <div class="mdui-col-xs-9">
                             <label class="mdui-slider">
-                                <input id="speed" type="range" step="0.1" min="800" max="1000" value="800"/>
+                                <input id="speed" type="range" step="0.1" min="800" max="1000" value="1000"/>
                             </label>
                         </div>
                     </div>
@@ -167,12 +167,12 @@
                             a.ctx.drawImage(this,0,0);
                             $$("#gen").removeAttr("disabled");
                             var toWidth=(document.documentElement.clientWidth-120)/2;
-                            //$$(a.Source).css("width",+(this.width<toWidth ? this.width : toWidth)+"px")
-                            //$$(a.Source).css("height",(this.width<toWidth ? this.height : this.height * (toWidth/this.Width))+"px")
-                            //$$(a.Output).css("width",+(this.width<toWidth ? this.width : toWidth)+"px")
-                            //$$(a.Output).css("height",(this.width<toWidth ? this.height : this.height * (toWidth/this.Width))+"px")
-                            //$$(a.canvas).css("width",+(this.width<toWidth ? this.width : toWidth)+"px")
-                            //$$(a.canvas).css("height",(this.width<toWidth ? this.height : this.height * (toWidth/this.Width))+"px")
+                            $$(a.Source).css("width",+(this.width<toWidth ? this.width : toWidth)+"px")
+                            $$(a.Source).css("height",(this.width<toWidth ? this.height : this.height * (toWidth/this.Width))+"px")
+                            $$(a.Output).css("width",+(this.width<toWidth ? this.width : toWidth)+"px")
+                            $$(a.Output).css("height",(this.width<toWidth ? this.height : this.height * (toWidth/this.Width))+"px")
+                            $$(a.canvas).css("width",+(this.width<toWidth ? this.width : toWidth)+"px")
+                            $$(a.canvas).css("height",(this.width<toWidth ? this.height : this.height * (toWidth/this.Width))+"px")
                             $$(a.Source).show();
                         }
                     })(this);
