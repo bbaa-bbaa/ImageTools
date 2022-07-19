@@ -184,6 +184,7 @@
                 gen:function(){
                     $$("#gen").attr("disabled","");
                     if(!this.Source.complete) return;
+		    this.ctx.clearRect(0, 0, this.width, this.height); //修复在图像有透明通道时多次执行的bug
                     this.ctx.drawImage(this.Source,0,0);
                     $$("#Output").hide();
                     $$("#Drawing").show();
